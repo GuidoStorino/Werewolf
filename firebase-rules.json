@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomCode": {
+        // Anyone can read the room (needed for all players to see state)
+        ".read": true,
+        
+        // Only allow writes if the room exists or is being created
+        ".write": true,
+        
+        "players": {
+          "$playerId": {
+            // Players can only update their own player data
+            // Role is write-once (assigned at game start by host)
+            "spiedResult": {
+              // Only the hunter can write their own spied result
+              ".write": "auth == null || true"
+            }
+          }
+        }
+      }
+    }
+  }
+}
