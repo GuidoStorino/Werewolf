@@ -4,8 +4,9 @@ import {
 } from 'firebase/database';
 import {
   generateRoomCode, assignRoles, checkWinCondition,
-  PHASES, NIGHT_STEPS, ROLES
+  PHASES, NIGHT_STEPS, ROLES   // ← agregar ROLES
 } from './game';
+
 
 // ─── Room Creation ──────────────────────────────────────────────────────────
 
@@ -261,7 +262,24 @@ export async function resolveVote(code) {
 // ─── Night Step Advancement ───────────────────────────────────────────────────
 
 export async function advanceNightStep(code, nextStep) {
-  await update(ref(db, `rooms/${code}`), { nightStep: nextStep });
+  const snap = await get(ref(db, `rooms/${code}/players`));
+  const players = snap.val() || {};
+  const alivePlayers = Object.values(players).filter(p => p.alive);
+
+  // Si el siguiente paso no tiene nadie vivo que lo ejecute, saltearlo
+  let step = nextStep;
+
+  if (step === NIGHT_STEPS.ALCHEMIST) {
+    const hasAlchemist = alivePlayers.some(p => p.role === ROLES.ALQUIMISTA);
+    if (!hasAlchemist) step = NIGHT_STEPS.HUNTER;
+  }
+
+  if (step === NIGHT_STEPS.HUNTER) {
+    const hasHunter = alivePlayers.some(p => p.role === ROLES.CAZADOR);
+    if (!hasHunter) step = NIGHT_STEPS.DONE;
+  }
+
+  await update(ref(db, `rooms/${code}`), { nightStep: step });
 }
 
 // ─── Subscribe helpers ────────────────────────────────────────────────────────
