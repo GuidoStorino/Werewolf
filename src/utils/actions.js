@@ -297,3 +297,36 @@ export async function deleteRoom(code) {
 export async function setConnected(code, playerId, connected) {
   await update(ref(db, `rooms/${code}/players/${playerId}`), { connected });
 }
+
+export async function resetRoom(code, newSettings) {
+  const snap = await get(ref(db, `rooms/${code}`));
+  const room = snap.val();
+  const players = room.players || {};
+
+  // Limpiar roles y estado de cada jugador, mantener la lista
+  const cleanedPlayers = {};
+  Object.values(players).forEach(p => {
+    cleanedPlayers[p.id] = {
+      id: p.id,
+      name: p.name,
+      isHost: p.isHost,
+      alive: true,
+      connected: p.connected,
+      joinedAt: p.joinedAt,
+    };
+  });
+
+  await update(ref(db, `rooms/${code}`), {
+    phase: PHASES.LOBBY,
+    settings: newSettings,
+    players: cleanedPlayers,
+    nightActions: {},
+    votes: {},
+    roundLog: {},
+    round: 0,
+    lastNightResult: null,
+    lastVoteResult: null,
+    winner: null,
+    nightStep: null,
+  });
+}
